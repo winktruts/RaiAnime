@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Anime Finder - MyAnimeList</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { background: #111; color: #fff; font-family: sans-serif; margin: 0; padding: 20px; }
+    h1 { text-align: center; color: #ffcc00; margin-bottom: 20px; }
+    input, select {
+      padding: 10px;
+      font-size: 16px;
+      margin: 0 5px 20px;
+    }
+    .anime-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    .anime-card {
+      background: #222; border-radius: 10px; text-align: center;
+      padding: 10px; cursor: pointer; transition: 0.3s;
+    }
+    .anime-card:hover { transform: scale(1.03); }
+    .anime-card img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; }
+    .anime-card h3 { font-size: 16px; margin: 10px 0; color: #ffcc00; }
+    .anime-card p { font-size: 12px; color: #ccc; }
+    #modal {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.9); color: #fff; padding: 40px; overflow-y: auto; z-index: 1000;
+    }
+    #modal-content {
+      background: #222; padding: 20px; border-radius: 10px;
+      max-width: 600px; margin: auto; text-align: center;
+    }
+    #modal img {
+      width: 100%; max-height: 300px; object-fit: cover; border-radius: 10px; margin-bottom: 10px;
+    }
+    #modal button {
+      float: right; background: #ffcc00; border: none;
+      padding: 5px 10px; cursor: pointer; font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Anime Finder (MyAnimeList)</h1>
+  <div style="text-align:center;">
+    <input type="text" id="searchInput" placeholder="Cari anime..." />
+    <select id="genreFilter">
+      <option value="">Semua Genre</option>
+    </select>
+  </div>
+  <div id="animeList" class="anime-grid"></div>
+
+  <div id="modal">
+    <div id="modal-content">
+      <button onclick="document.getElementById('modal').style.display='none'">Tutup</button>
+      <h2 id="modal-title"></h2>
+      <img id="modal-img" src="" />
+      <p id="modal-synopsis"></p>
+      <p><strong>Skor:</strong> <span id="modal-score"></span></p>
+      <p><strong>Genre:</strong> <span id="modal-genres"></span></p>
+      <a id="modal-link" href="#" target="_blank" style="color: #ffcc00;">Lihat di MyAnimeList</a>
+    </div>
+  </div>
+
+  <script>
+    const animeList = document.getElementById('animeList');
+    const searchInput = document.getElementById('searchInput');
+    const genreFilter = document.getElementById('genreFilter');
+    let allAnime = [];
+
+    async function fetchAnime(query = '') {
+      animeList.innerHTML = '<p style="text-align:center;">Memuat...</p>';
+      try {
+        const res = await fetch(`https://api.jikan.moe/v4/anime?q=${query}&limit=24`);
+        const json = await res.json();
+        allAnime = json.data;
+        renderAnime(allAnime);
+        populateGenreDropdown(allAnime);
+      } catch (err) {
+        animeList.innerHTML = '<p style="text-align:center;">Gagal memuat data anime.</p>';
+      }
+    }
+
+    function renderAnime(animes) {
+      animeList.innerHTML = '';
+      const selectedGenre = genreFilter.value;
+      const filtered = animes.filter(anime => {
+        if (!selectedGenre) return true;
+        return anime.genres.some(g => g.name === selectedGenre);
+      });
+
+      if (filtered.length === 0) {
+        animeList.innerHTML = '<p style="text-align:center;">Tidak ditemukan.</p>';
+        return;
+      }
+
+      filtered.forEach(anime => {
+        const card = document.createElement('div');
+        card.className = 'anime-card';
+        card.innerHTML = `
+          <img src="${anime.images.jpg.image_url}" alt="${anime.title}" />
+          <h3>${anime.title}</h3>
+          <p>Skor: ${anime.score || '-'} | ${anime.type}</p>
+        `;
+        card.onclick = () => showModal(anime);
+        animeList.appendChild(card);
+      });
+    }
+
+    function populateGenreDropdown(animes) {
+      const genreSet = new Set();
+      animes.forEach(anime => anime.genres.forEach(g => genreSet.add(g.name)));
+      genreFilter.innerHTML = '<option value="">Semua Genre</option>';
+      Array.from(genreSet).sort().forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = g;
+        genreFilter.appendChild(opt);
+      });
+    }
+
+    function showModal(anime) {
+      document.getElementById('modal-title').textContent = anime.title;
+      document.getElementById('modal-img').src = anime.images.jpg.image_url;
+      document.getElementById('modal-synopsis').textContent = anime.synopsis || 'Sinopsis tidak tersedia.';
+      document.getElementById('modal-score').textContent = anime.score || '-';
+      document.getElementById('modal-genres').textContent = anime.genres.map(g => g.name).join(', ');
+      document.getElementById('modal-link').href = anime.url;
+      document.getElementById('modal').style.display = 'block';
+    }
+
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.trim();
+      if (query.length > 2) {
+        fetchAnime(query);
+      } else if (query.length === 0) {
+        fetchAnime();
+      }
+    });
+
+    genreFilter.addEventListener('change', () => renderAnime(allAnime));
+
+    fetchAnime();
+  </script>
+</body>
+</html>
