@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Anime Finder - MyAnimeList</title>
@@ -21,11 +21,17 @@
     .anime-card img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; }
     .anime-card h3 { font-size: 16px; margin: 10px 0; color: #ffcc00; }
     .anime-card p { font-size: 12px; color: #ccc; }
-    .anime-card a.tonton-btn {
-      display: inline-block; margin-top: 10px; padding: 6px 12px;
-      background: #ffcc00; color: #000; text-decoration: none;
-      border-radius: 5px; font-weight: bold;
+    .anime-card a.watch-btn, .anime-card a.download-btn {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 6px 12px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
     }
+    .watch-btn { background: #ffcc00; color: #000; }
+    .download-btn { background: #00ccff; color: #000; }
+
     #modal {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.9); color: #fff; padding: 40px; overflow-y: auto; z-index: 1000;
@@ -41,34 +47,40 @@
       float: right; background: #ffcc00; border: none;
       padding: 5px 10px; cursor: pointer; font-weight: bold;
     }
-    #stream-btn {
-      display: inline-block; margin-top: 15px; padding: 8px 16px;
-      background: #ffcc00; color: #000; text-decoration: none;
-      border-radius: 5px; font-weight: bold;
+    #watch-btn, #download-btn {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 8px 16px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
     }
+    #watch-btn { background: #ffcc00; color: #000; }
+    #download-btn { background: #00ccff; color: #000; }
   </style>
 </head>
 <body>
   <h1>Anime Finder (MyAnimeList)</h1>
   <div style="text-align:center;">
-    <input type="text" id="searchInput" placeholder="Cari anime..." />
+    <input type="text" id="searchInput" placeholder="Search anime..." />
     <select id="genreFilter">
-      <option value="">Semua Genre</option>
+      <option value="">All Genres</option>
     </select>
   </div>
   <div id="animeList" class="anime-grid"></div>
 
   <div id="modal">
     <div id="modal-content">
-      <button onclick="document.getElementById('modal').style.display='none'">Tutup</button>
+      <button onclick="document.getElementById('modal').style.display='none'">Close</button>
       <h2 id="modal-title"></h2>
       <img id="modal-img" src="" />
       <p id="modal-synopsis"></p>
-      <p><strong>Skor:</strong> <span id="modal-score"></span></p>
-      <p><strong>Genre:</strong> <span id="modal-genres"></span></p>
-      <a id="modal-link" href="#" target="_blank" style="color: #ffcc00;">Lihat di MyAnimeList</a>
+      <p><strong>Score:</strong> <span id="modal-score"></span></p>
+      <p><strong>Genres:</strong> <span id="modal-genres"></span></p>
+      <a id="modal-link" href="#" target="_blank" style="color: #ffcc00;">View on MyAnimeList</a>
       <br />
-      <a id="stream-btn" href="#" target="_blank">Tonton Sekarang</a>
+      <a id="watch-btn" href="#" target="_blank">Watch Now</a>
+      <a id="download-btn" href="#" target="_blank">Download</a>
     </div>
   </div>
 
@@ -79,7 +91,7 @@
     let allAnime = [];
 
     async function fetchAnime(query = '') {
-      animeList.innerHTML = '<p style="text-align:center;">Memuat...</p>';
+      animeList.innerHTML = '<p style="text-align:center;">Loading...</p>';
       try {
         const res = await fetch(`https://api.jikan.moe/v4/anime?q=${query}&limit=24`);
         const json = await res.json();
@@ -87,7 +99,7 @@
         renderAnime(allAnime);
         populateGenreDropdown(allAnime);
       } catch (err) {
-        animeList.innerHTML = '<p style="text-align:center;">Gagal memuat data anime.</p>';
+        animeList.innerHTML = '<p style="text-align:center;">Failed to load anime data.</p>';
       }
     }
 
@@ -100,7 +112,7 @@
       });
 
       if (filtered.length === 0) {
-        animeList.innerHTML = '<p style="text-align:center;">Tidak ditemukan.</p>';
+        animeList.innerHTML = '<p style="text-align:center;">No anime found.</p>';
         return;
       }
 
@@ -110,11 +122,12 @@
         card.innerHTML = `
           <img src="${anime.images.jpg.image_url}" alt="${anime.title}" />
           <h3>${anime.title}</h3>
-          <p>Skor: ${anime.score || '-'} | ${anime.type}</p>
-          <a class="tonton-btn" href="https://www.anime-planet.com/anime/all?name=${encodeURIComponent(anime.title)}" target="_blank">Tonton</a>
+          <p>Score: ${anime.score || '-'} | ${anime.type}</p>
+          <a class="watch-btn" href="https://www.anime-planet.com/anime/all?name=${encodeURIComponent(anime.title)}" target="_blank">Watch</a>
+          <a class="download-btn" href="https://samehadaku.wiki/?s=${encodeURIComponent(anime.title)}" target="_blank">Download</a>
         `;
         card.onclick = (e) => {
-          if (!e.target.classList.contains('tonton-btn')) {
+          if (!e.target.classList.contains('watch-btn') && !e.target.classList.contains('download-btn')) {
             showModal(anime);
           }
         };
@@ -125,7 +138,7 @@
     function populateGenreDropdown(animes) {
       const genreSet = new Set();
       animes.forEach(anime => anime.genres.forEach(g => genreSet.add(g.name)));
-      genreFilter.innerHTML = '<option value="">Semua Genre</option>';
+      genreFilter.innerHTML = '<option value="">All Genres</option>';
       Array.from(genreSet).sort().forEach(g => {
         const opt = document.createElement('option');
         opt.value = g;
@@ -137,11 +150,12 @@
     function showModal(anime) {
       document.getElementById('modal-title').textContent = anime.title;
       document.getElementById('modal-img').src = anime.images.jpg.image_url;
-      document.getElementById('modal-synopsis').textContent = anime.synopsis || 'Sinopsis tidak tersedia.';
+      document.getElementById('modal-synopsis').textContent = anime.synopsis || 'Synopsis not available.';
       document.getElementById('modal-score').textContent = anime.score || '-';
       document.getElementById('modal-genres').textContent = anime.genres.map(g => g.name).join(', ');
       document.getElementById('modal-link').href = anime.url;
-      document.getElementById('stream-btn').href = `https://www.anime-planet.com/anime/all?name=${encodeURIComponent(anime.title)}`;
+      document.getElementById('watch-btn').href = `https://www.anime-planet.com/anime/all?name=${encodeURIComponent(anime.title)}`;
+      document.getElementById('download-btn').href = `https://samehadaku.wiki/?s=${encodeURIComponent(anime.title)}`;
       document.getElementById('modal').style.display = 'block';
     }
 
