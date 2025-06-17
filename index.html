@@ -21,6 +21,11 @@
     .anime-card img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; }
     .anime-card h3 { font-size: 16px; margin: 10px 0; color: #ffcc00; }
     .anime-card p { font-size: 12px; color: #ccc; }
+    .anime-card a.tonton-btn {
+      display: inline-block; margin-top: 10px; padding: 6px 12px;
+      background: #ffcc00; color: #000; text-decoration: none;
+      border-radius: 5px; font-weight: bold;
+    }
     #modal {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.9); color: #fff; padding: 40px; overflow-y: auto; z-index: 1000;
@@ -35,6 +40,11 @@
     #modal button {
       float: right; background: #ffcc00; border: none;
       padding: 5px 10px; cursor: pointer; font-weight: bold;
+    }
+    #stream-btn {
+      display: inline-block; margin-top: 15px; padding: 8px 16px;
+      background: #ffcc00; color: #000; text-decoration: none;
+      border-radius: 5px; font-weight: bold;
     }
   </style>
 </head>
@@ -57,6 +67,8 @@
       <p><strong>Skor:</strong> <span id="modal-score"></span></p>
       <p><strong>Genre:</strong> <span id="modal-genres"></span></p>
       <a id="modal-link" href="#" target="_blank" style="color: #ffcc00;">Lihat di MyAnimeList</a>
+      <br />
+      <a id="stream-btn" href="#" target="_blank">Tonton Sekarang</a>
     </div>
   </div>
 
@@ -99,8 +111,13 @@
           <img src="${anime.images.jpg.image_url}" alt="${anime.title}" />
           <h3>${anime.title}</h3>
           <p>Skor: ${anime.score || '-'} | ${anime.type}</p>
+          <a class="tonton-btn" href="https://www.anime-planet.com/anime/all?name=${encodeURIComponent(anime.title)}" target="_blank">Tonton</a>
         `;
-        card.onclick = () => showModal(anime);
+        card.onclick = (e) => {
+          if (!e.target.classList.contains('tonton-btn')) {
+            showModal(anime);
+          }
+        };
         animeList.appendChild(card);
       });
     }
@@ -124,6 +141,7 @@
       document.getElementById('modal-score').textContent = anime.score || '-';
       document.getElementById('modal-genres').textContent = anime.genres.map(g => g.name).join(', ');
       document.getElementById('modal-link').href = anime.url;
+      document.getElementById('stream-btn').href = `https://www.anime-planet.com/anime/all?name=${encodeURIComponent(anime.title)}`;
       document.getElementById('modal').style.display = 'block';
     }
 
